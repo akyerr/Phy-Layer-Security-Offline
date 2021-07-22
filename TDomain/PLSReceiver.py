@@ -1,7 +1,7 @@
-from numpy import conj, sqrt, convolve, zeros, var, diag, angle, dot, exp, array, real, argwhere, tile
+from numpy import conj, sqrt, convolve, zeros, var, diag, angle, dot, exp, array, real, argwhere, tile, log10
 from numpy.random import normal
 from numpy.fft import fft
-from numpy.linalg import svd
+from numpy.linalg import svd, norm
 import matplotlib.pyplot as plt
 
 
@@ -82,7 +82,7 @@ class PLSReceiver:
         :param buffer_tx_time: Time domain tx signal streams on each antenna (matrix)
         :return buffer_rx_time: Time domain rx signal at each receive antenna
         """
-        buffer_rx_time = zeros((self.num_ant,self.total_symb_len + self.max_impulse - 1), dtype=complex)
+        buffer_rx_time = zeros((self.num_ant, self.total_symb_len + self.max_impulse - 1), dtype=complex)
         for rx in range(self.num_ant):
             rx_sig_ant = 0  # sum rx signal at each antenna
             for tx in range(self.num_ant):
@@ -188,7 +188,7 @@ class PLSReceiver:
                 data_fft = fft(time_data, self.NFFT)
                 data_in_used_bins = data_fft[self.used_data_bins]
 
-                est_channel = data_in_used_bins*conj(ref_sig[symb, :])/(abs(ref_sig[symb, :])) # channel at the used bins
+                est_channel = data_in_used_bins * conj(ref_sig[symb, :])/(abs(ref_sig[symb, :])) # channel at the used bins
                 chan_est_bins[ant, used_symb_start: used_symb_end] = est_channel
                 # est_channel = data_in_used_bins*conj(ref_sig[symb, :])/(1 + (1 / SNRlin))
                 for subband_index in range(int(self.num_data_bins / self.subband_size)):
@@ -215,11 +215,24 @@ class PLSReceiver:
         return chan_est_bins
 
     def channel_check(self, chan_est_bins_sort, ref_sig, precoders):
-        chan_symb0_sb_0 = chan_est_bins_sort[:, 0, 0, :]
-        ref_sig_symb0_sb_0 = tile(ref_sig[0, 0:2], (2, 1))
-        precoder_symb0_sb_0 = precoders[0, 0]
-        G = (ref_sig_symb0_sb_0 * precoder_symb0_sb_0)
-        chan = chan_symb0_sb_0 / G
+        for ant in range(2):
+            chan_symb0_sb_0 = chan_est_bins_sort[ant, 0, 0, :]
+            ref_sig_symb0_sb_0 = tile(ref_sig[0, 0:2], (2, 1))
+            precoder_symb0_sb_0 = precoders[0, 0]
+            G = (ref_sig_symb0_sb_0 * precoder_symb0_sb_0)
+            chan = chan_symb0_sb_0 / G
+            _, geni_chan_freq = self.give_genie_chan()
+            chan_gen = geni_chan_freq[ant, [30, 31]]
+            xax = array(range(0, 2))
+            yax1 = 20 * log10(abs(chan))
+            yax2 = 20 * log10(abs(chan_gen))
+            ypred = [x for i, x in enumerate(yax1)]
+            ygeni = [x for i, x in enumerate(yax2)]
+            #
+            plt.title(f'Genie for Ant{ant}')
+            plt.plot(xax, ypred, 'r')
+            plt.plot(xax, ygeni, 'b')
+            plt.show()
         return 0
 
     def bins2subbands(self, chan_est_bins):
@@ -289,6 +302,9 @@ class PLSReceiver:
         """
         PMI_sb_estimate = zeros((self.num_data_symb, self.num_subbands), dtype=int)
         bits_sb_estimate = zeros((self.num_data_symb, self.num_subbands), dtype=object)
+        plt.plot(rx_precoder[0, 0].real, rx_precoder[0, 0].imag)
+        plt.title('First Precoder: Binary 0')
+        plt.show()
         for symb in range(self.num_data_symb):
             for sb in range(self.num_subbands):
                 dist = zeros(len(self.codebook), dtype=float)
@@ -303,3 +319,23 @@ class PLSReceiver:
                 bits_sb_estimate[symb, sb] = self.dec2binary(PMI_estimate, self.bit_codebook)
 
         return PMI_sb_estimate, bits_sb_estimate
+
+    def give_genie_chan(self):
+        h = zeros((self.num_ant, self.num_ant), dtype=object)
+        channel_time = zeros((self.num_ant, self.num_ant, self.max_impulse), dtype=complex)
+        channel_freq = zeros((self.num_ant, self.num_ant, int(self.NFFT)), dtype=complex)
+        genie_chan_freq = zeros((self.num_ant, int(self.NFFT)), dtype=complex)
+
+        h[0, 0] = array([1])
+        h[0, 1] = array([1])
+        h[1, 0] = array([1])
+        h[1, 1] = array([1])
+        for rx in range(self.num_ant):
+            for tx in range(self.num_ant):
+                channel_time[rx, tx, 0:len(h[rx, tx])] = h[rx, tx] / norm(h[rx, tx])
+                channel_freq[rx, tx, :] = fft(channel_time[rx, tx, 0:len(h[rx, tx])], self.NFFT)
+
+        genie_chan_time = channel_time
+        genie_chan_freq[0][:] = channel_freq[0][0][:]
+        return genie_chan_time, genie_chan_freq
+

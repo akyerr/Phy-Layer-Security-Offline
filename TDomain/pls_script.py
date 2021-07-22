@@ -8,7 +8,7 @@ from PLSTransmitter import PLSTransmitter
 from PLSReceiver import PLSReceiver
 from SynchSignal import SynchSignal
 
-SNRdB = 1000
+SNRdB = 0.01
 SNR_type = 'Analog'
 
 pls_profiles = {

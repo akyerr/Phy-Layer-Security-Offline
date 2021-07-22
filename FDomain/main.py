@@ -24,19 +24,19 @@ for prof in pls_profiles.values():
         for i in range(max_iter):
             HAB, HBA = pls_params.channel_gen()
 
-            ## 1. Alice to Bob
+            ## 1. Alice to Bob #TODO: State 1 (GR SENT)
             GA = N.unitary_gen()
             rx_sigB0 = N.receive('Bob', SNR_dB[s], HAB, GA)
 
-            ## 1. At Bob
+            ## 1. At Bob #TODO: State 2 (G1r calculated)
             UB0 = N.sv_decomp(rx_sigB0)[0]
             bits_subbandB = N.secret_key_gen()
             FB = N.precoder_select(bits_subbandB, codebook)
 
-            ## 2. Bob to Alice
+            ## 2. Bob to Alice #TODO: State 3 (G1r)
             rx_sigA = N.receive('Alice', SNR_dB[s], HBA, UB0, FB)
 
-            ## 2. At Alice
+            ## 2. At Alice #TODO: State 4 (G2r calculated)
             UA, _, VA = N.sv_decomp(rx_sigA)
             bits_sb_estimateB = N.PMI_estimate(VA, codebook)[1]
             actual_keyB = concatenate(bits_subbandB)
@@ -46,10 +46,10 @@ for prof in pls_profiles.values():
             bits_subbandA = N.secret_key_gen()
             FA = N.precoder_select(bits_subbandA, codebook)
 
-            ## 3. Alice to Bob
+            ## 3. Alice to Bob #TODO: State 5 (G2r/Private Data)
             rx_sigB1 = N.receive('Bob', SNR_dB[s], HAB, UA, FA)
 
-            ## 3. At Bob
+            ## 3. At Bob #TODO: State 6 (Private Data recovered)
             VB1 = N.sv_decomp(rx_sigB1)[2]
             bits_sb_estimateA = N.PMI_estimate(VB1, codebook)[1]
             actual_keyA = concatenate(bits_subbandA)

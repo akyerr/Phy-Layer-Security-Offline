@@ -56,14 +56,14 @@ class PLSParameters:
             # h[0, 1] = array([1])
             # h[1, 0] = array([1])
             # h[1, 1] = array([1])
-            h[0, 0] = array([0.3977])
-            h[0, 1] = array([0.8423j])
-            h[1, 0] = array([0.1631])
-            h[1, 1] = array([0.0572j])
-            # h[0, 0] = array([0.3977, 0.7954 - 0.3977j, -0.1988, 0.0994, -0.0398])
-            # h[0, 1] = array([0.8423j, 0.5391, 0, 0, 0])
-            # h[1, 0] = array([0.1631, -0.0815 + 0.9784j, 0.0978, 0, 0])
-            # h[1, 1] = array([0.0572j, 0.3659j, 0.5717 - 0.5717j, 0.4574, 0])
+            # h[0, 0] = array([0.3977])
+            # h[0, 1] = array([0.8423j])
+            # h[1, 0] = array([0.1631])
+            # h[1, 1] = array([0.0572j])
+            h[0, 0] = array([0.3977, 0.7954 - 0.3977j, -0.1988, 0.0994, -0.0398])
+            h[0, 1] = array([0.8423j, 0.5391, 0, 0, 0])
+            h[1, 0] = array([0.1631, -0.0815 + 0.9784j, 0.0978, 0, 0])
+            h[1, 1] = array([0.0572j, 0.3659j, 0.5717 - 0.5717j, 0.4574, 0])
         else:
             print('# Load from MATLAB channel toolbox - currently not done')
             exit(0)
@@ -80,8 +80,6 @@ class PLSParameters:
                 self.channel_freq[rx, tx, :] = fft(self.channel_time[rx, tx, 0:len(h[rx, tx])], self.NFFT)
                 self.h_f[rx, tx, :] = self.channel_freq[rx, tx, self.used_data_bins.astype(int)]
 
-
-
     def codebook_gen(self):
         """
         Generate a DFT codebook.
@@ -93,7 +91,7 @@ class PLSParameters:
 
         for p in range(0, num_precoders):
             precoder = zeros((self.num_ant, self.num_ant), dtype=complex)
-            for m in range(0, self.num_ant):
+            for m in range(0, 2, self.num_ant * 2):
                 for n in range(0, self.num_ant):
                     w = exp(1j*2*pi*(n/self.num_ant)*(m + p/num_precoders))
                     precoder[n, m] = (1/sqrt(self.num_ant))*w

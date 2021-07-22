@@ -2,6 +2,7 @@ from numpy import zeros, dot, conj, prod, sqrt, exp, pi, diag, angle, array, arg
 from numpy.linalg import qr, multi_dot, svd
 from numpy.random import uniform, normal, randint
 
+
 class Node:
     def __init__(self, pls_params):
         """
@@ -78,8 +79,12 @@ class Node:
         Contains 3 cases for the 3 steps of the process depending who is the receiver (Alice or Bob)
         Generates the frequency domain rx signal in each sub-band which is of the form H*G*F
         H - channel, G - random unitary or LSV from SVD, F - DFT precoder
-        :param args: 0 - who is receiving, 1 - signal to noise ratio in dB, 2 - freq domain channel,
-        3 - random unitary or LSV from SVD, 4 - DFT precoder
+        :param args:
+        0 - who is receiving,
+        1 - signal to noise ratio in dB,
+        2 - freq domain channel,
+        3 - random unitary or LSV from SVD,
+        4 - DFT precoder
         :return: frequency domain rx signal in each sub-band
         """
         rx_node = args[0]
@@ -112,7 +117,6 @@ class Node:
                 rx_sigA[sb] = self.awgn(tx_sig, SNRdB)
                 # rx_sigA[sb] = tx_sig
             return rx_sigA
-
 
     def secret_key_gen(self):
         """

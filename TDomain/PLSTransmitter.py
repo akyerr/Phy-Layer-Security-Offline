@@ -51,7 +51,6 @@ class PLSTransmitter:
         tx_node = args[0]
         num_data_symb = args[1]
 
-
         if tx_node == 'Alice0':
             precoders = self.unitary_gen()
         elif tx_node == 'Bob':
