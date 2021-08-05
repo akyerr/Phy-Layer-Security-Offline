@@ -1,0 +1,99 @@
+classdef PLSParameters
+    
+    properties
+        bandwidth = 960e3;
+        bin_spacing = 15e3;
+        num_ant = 2;
+        bit_codebook = 1;
+        synch_data_pattern = [1, 2];
+        NFFT = 64;
+        CP = 16;
+        num_data_bins = 4;
+        subband_size = 2;
+        num_subbands = 2;
+        used_data_bins = [];
+        num_PMI = 2;
+        max_impulse = 16;
+        channel_time = [];
+        channel_freq = [];
+        
+        channel_freq_usedbins = [];
+        channel_test_case = 0;
+        
+    end
+    
+    methods
+        
+        function obj = PLSParameters(profile)
+            obj.bandwidth = profile.bandwidth;
+            obj.bin_spacing = profile.bin_spacing;
+            obj.num_ant = profile.num_ant;
+            obj.bit_codebook = profile.bit_codebook;
+            obj.synch_data_pattern = profile.synch_data_pattern;
+            obj.channel_test_case = profile.channel_test_case;
+            
+            obj.NFFT = floor(obj.bandwidth/obj.bin_spacing);
+            obj.CP = obj.NFFT/4;
+            
+            %             obj.num_data_bins = 0.75*obj.NFFT;
+            obj.num_data_bins = 4;
+            
+            obj.subband_size = obj.num_ant;
+            
+            if obj.num_data_bins == 1
+                obj.used_data_bins = 10;
+            end
+            
+            DC_index = obj.NFFT/2;
+            neg_data_bins = DC_index-obj.num_data_bins/2 : DC_index-1;
+            pos_data_bins = DC_index+1 : DC_index+obj.num_data_bins/2;
+            
+            obj.used_data_bins = [neg_data_bins, pos_data_bins];
+            
+            obj.num_subbands = floor(obj.num_data_bins/obj.subband_size);
+            
+            obj.num_PMI = obj.num_subbands;
+            obj.max_impulse = obj.CP;
+            
+            obj.channel_time = zeros(obj.num_ant, obj.num_ant, obj.max_impulse);
+            obj.channel_freq = zeros(obj.num_ant, obj.num_ant, obj.NFFT);
+            obj.channel_freq_usedbins = zeros(obj.num_ant, obj.num_ant, obj.num_data_bins);
+            
+            h = cell(obj.num_ant, obj.num_ant);
+            if obj.channel_test_case == 0
+                h{1, 1} = 0.3977;
+                h{1, 2} = 0.8423i;
+                h{2, 1} = 0.1631;
+                h{2, 2} = 0.0572i;
+            elseif obj.channel_test_case == 1
+                h{1, 1} = 1;
+                h{1, 2} = 1;
+                h{2, 1} = 1;
+                h{2, 2} = 1;
+            else
+                error('toolbox channel currently not supported');
+            end
+            
+            if obj.channel_test_case == 0 || obj.channel_test_case == 1
+                for rx = 1: obj.num_ant
+                    for tx = 1: obj.num_ant
+                        % Time domain channel
+                        obj.channel_time(rx, tx, 1:length(h{rx, tx})) = h{rx, tx}./norm(h{rx, tx});
+                        
+                        % Freq domain channel
+                        obj.channel_freq(rx, tx, :) = fft(obj.channel_time(rx, tx, 1:length(h{rx, tx})), obj.NFFT);
+                        
+                        % Freq domain channel at the used bins
+                        obj.channel_freq_usedbins(rx, tx, :) = obj.channel_freq(rx, tx, obj.used_data_bins);
+                    end
+                end
+            end  
+            dbg = 1;
+           
+        end
+        
+        
+        function codebook = codebook_gen(obj)
+        
+    end
+end
